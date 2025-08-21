@@ -1,0 +1,60 @@
+Here's the entire code with the optimal threshold calculation:
+
+
+#!/usr/bin/env python3
+
+import asyncio
+import AsyncCryptoV1
+from dotenv import load_dotenv
+import os
+from decimal import Decimal
+import logging
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+from sklearn.metrics import precision_recall_curve
+
+load_dotenv()
+
+api_key = os.environ.get("API_KEY")
+api_secret = os.environ.get("API_SECRET")
+
+client = AsyncCryptoV1.CryptoLinkClient(api_key, api_secret)
+
+target = Decimal(10.00)
+
+# Assuming you have X_test and y_test
+probabilities = client.model.predict_proba(X_test)[:, 1]
+precision, recall, thresholds = precision_recall_curve(y_test, probabilities)
+
+# Find the optimal threshold
+optimal_threshold = thresholds[np.argmax(precision + recall)]
+print(f"Optimal threshold: {optimal_threshold}")
+
+async def test_generate_buy_signals(tickers):
+    for ticker in tickers:
+        candles = await client.test_retrieve_candles(ticker)
+        if candles.candles:
+            features = np.array([[candles.candles[0].open, candles.candles[0].high, candles.candles[0].low]])
+            features_scaled = client.scaler.transform(features)
+            prediction = client.model.predict_proba(features_scaled)
+            print(f"Prediction for {ticker}: {prediction}")
+            if prediction.shape[1] > 1:  # Check if there are multiple classes
+                prediction = prediction[0][1]
+            else:
+                prediction = prediction[0][0]  # If not, use the single class probability
+            if prediction > optimal_threshold:  # Use the optimal threshold
+                print(f"Buy signal generated for {ticker} with prediction value: {prediction}")
+                # create buy order here
+                # await client.create_buy_order
+            else:
+                print(f"Current prediction is too low at {prediction}")
+
+async def main():
+    tickers = [...]  # List of tickers to check
+    await test_generate_buy_signals(tickers)
+
+asyncio.run(main())
+
+
+
+Make sure to replace X_test, y_test, and tickers with the actual data and list of tickers you want to use. Also, ensure that client.scaler and client.model are properly initialized and fitted before using them.
