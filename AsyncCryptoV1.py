@@ -45,6 +45,7 @@ class CryptoLinkClient():
         self.pnl = float()
         self.profitable_positions = []
         self.observed_max_drawdown = Decimal('.08')
+        self.peak_balance = Decimal('0.00')
     async def init(self):
 
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
@@ -66,7 +67,32 @@ class CryptoLinkClient():
             logging.error(f"an error occured in the get coin info function: {e}")
             logging.exception(msg=e, stack_info=True)
 
+    async def update_drawdown_metrics(self):
+    """
+    Tracks the peak-to-trough drop in real-time.
+    Formula: (Current - Peak) / Peak
+    """
+    current_balance = await self.get_trading_balance()
+    
+    # 1. Update the lifetime peak
+    if current_balance > self.peak_balance:
+        self.peak_balance = current_balance
+        print(f"New All-Time High balance: {self.peak_balance}")
 
+    # 2. Calculate current drawdown if we are below peak
+    if self.peak_balance > 0:
+        current_drawdown = (current_balance - self.peak_balance) / self.peak_balance
+        
+        # 3. Update Max Drawdown record
+        if current_drawdown < self.max_observed_drawdown:
+            self.max_observed_drawdown = current_drawdown
+            
+        print(f"Current DD: {current_drawdown*100:.2f}% | Max DD: {self.max_observed_drawdown*100:.2f}%")
+        
+        # Optional: Safety stop if dip exceeds promised 8%
+        if current_drawdown <= Decimal('-0.08'):
+            logging.critical("CRITICAL: Promised 8% Drawdown threshold hit. Halting trades.")
+            # self.stop_all_trading() 
 
     async def get_top_gainers(self):
         """
