@@ -34,9 +34,9 @@ class CryptoLinkClient():
         self.garbage = []
         self.top_performers = []
 
-        self.profit_threshold = Decimal('.50')
+        self.profit_threshold = Decimal('.02')
        
-        self.stop_loss_threshold = Decimal('-.01')
+        self.stop_loss_threshold = Decimal('-.05')
         #self.model, self.scaler = joblib.load('crypto/crypto_predictor.joblib')
         self.model, self.scaler = joblib.load('crypto_predictor.joblib')
 
