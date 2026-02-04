@@ -44,6 +44,7 @@ class CryptoLinkClient():
         self.labels_list = []
         self.pnl = float()
         self.profitable_positions = []
+        self.observed_max_drawdown = Decimal('.08')
     async def init(self):
 
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
